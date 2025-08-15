@@ -54,15 +54,31 @@
     const loader = new THREE.GLTFLoader();
     const loadedModels = {};
 
+    function centerCameraOn(model) {
+      const box = new THREE.Box3().setFromObject(model);
+      const center = box.getCenter(new THREE.Vector3());
+      controls.target.copy(center);
+      camera.position.set(center.x, center.y + 5, center.z + 10);
+      controls.update();
+    }
+
     function loadModel(name) {
       const file = `${name}.glb`;
-      loader.load(file, gltf => {
-        const model = gltf.scene;
-        model.name = name;
-        model.position.set(0, 0, 0);
-        scene.add(model);
-        loadedModels[name] = model;
-      });
+      loader.load(file,
+        gltf => {
+          const model = gltf.scene;
+          model.name = name;
+          model.position.set(0, 0, 0);
+          scene.add(model);
+          loadedModels[name] = model;
+          centerCameraOn(model);
+          console.log(`Loaded: ${file}`);
+        },
+        undefined,
+        error => {
+          console.error(`Error loading ${file}:`, error);
+        }
+      );
     }
 
     function unloadModel(name) {
@@ -70,6 +86,7 @@
       if (model) {
         scene.remove(model);
         delete loadedModels[name];
+        console.log(`Unloaded: ${name}.glb`);
       }
     }
 
@@ -97,5 +114,4 @@
     animate();
   </script>
 </body>
-
 </html>
