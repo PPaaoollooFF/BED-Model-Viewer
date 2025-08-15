@@ -15,10 +15,9 @@ document.body.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
-scene.add(light);
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
 directionalLight.position.set(5, 10, 7.5);
 scene.add(directionalLight);
 
@@ -28,26 +27,35 @@ const loadedModels = {};
 function centerCameraOn(model) {
   const box = new THREE.Box3().setFromObject(model);
   const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3()).length();
+  const distance = size * 1.5;
+
+  camera.position.set(center.x, center.y + distance / 4, center.z + distance);
   controls.target.copy(center);
-  camera.position.set(center.x, center.y + 5, center.z + 10);
   controls.update();
 }
 
 function loadModel(name) {
   const file = `${name}.glb`;
+  console.log(`Attempting to load: ${file}`);
+
   loader.load(file,
     gltf => {
       const model = gltf.scene;
       model.name = name;
+      model.scale.set(10, 10, 10); // Adjust scale if needed
       model.position.set(0, 0, 0);
       scene.add(model);
       loadedModels[name] = model;
       centerCameraOn(model);
-      console.log(`Loaded: ${file}`);
+      console.log(`✅ Loaded: ${file}`);
     },
-    undefined,
+    xhr => {
+      const percent = xhr.total ? (xhr.loaded / xhr.total * 100).toFixed(1) : '...';
+      console.log(`📦 ${name}: ${percent}% loaded`);
+    },
     error => {
-      console.error(`Error loading ${file}:`, error);
+      console.error(`❌ Error loading ${file}:`, error);
     }
   );
 }
@@ -57,7 +65,7 @@ function unloadModel(name) {
   if (model) {
     scene.remove(model);
     delete loadedModels[name];
-    console.log(`Unloaded: ${name}.glb`);
+    console.log(`🗑️ Unloaded: ${name}.glb`);
   }
 }
 
@@ -82,4 +90,3 @@ function animate() {
   renderer.render(scene, camera);
 }
 animate();
-
